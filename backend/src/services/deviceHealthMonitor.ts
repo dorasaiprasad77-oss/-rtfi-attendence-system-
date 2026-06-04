@@ -2,7 +2,7 @@ import prisma from "../config/database";
 import { emitDeviceEvent, emitStatsUpdate } from "../config/socket";
 
 const CHECK_INTERVAL_MS = 60_000; // Check every 60 seconds
-const OFFLINE_THRESHOLD_MS = 5 * 60_000; // 5 minutes without heartbeat = offline
+const DEFAULT_OFFLINE_THRESHOLD_MS = 5 * 60_000; // Default: 5 minutes without heartbeat = offline
 
 let monitorTimer: ReturnType<typeof setInterval> | null = null;
 let isRunning = false;
@@ -12,7 +12,16 @@ async function checkDeviceHealth(): Promise<void> {
   isRunning = true;
 
   try {
-    const cutoff = new Date(Date.now() - OFFLINE_THRESHOLD_MS);
+    // Read threshold from settings (falls back to default)
+    let offlineThresholdMs = DEFAULT_OFFLINE_THRESHOLD_MS;
+    try {
+      const setting = await prisma.systemSetting.findUnique({ where: { key: "device_offline_threshold_minutes" } });
+      if (setting && typeof setting.value === "number") {
+        offlineThresholdMs = setting.value * 60_000;
+      }
+    } catch {}
+
+    const cutoff = new Date(Date.now() - offlineThresholdMs);
 
     // Find all devices currently marked ONLINE but with stale lastSeen
     const staleDevices = await prisma.device.findMany({
@@ -89,7 +98,7 @@ async function checkDeviceHealth(): Promise<void> {
 
 export function startDeviceHealthMonitor(): void {
   if (monitorTimer) return; // Already running
-  console.log(`🏥 Device health monitor started (checking every ${CHECK_INTERVAL_MS / 1000}s, threshold: ${OFFLINE_THRESHOLD_MS / 1000}s)`);
+  console.log(`🏥 Device health monitor started (checking every ${CHECK_INTERVAL_MS / 1000}s, threshold: configurable via settings)`);
   monitorTimer = setInterval(checkDeviceHealth, CHECK_INTERVAL_MS);
 }
 

@@ -4,6 +4,7 @@ import {
   getAttendance,
   getMyAttendance,
   getDashboardStats,
+  updateAttendanceStatus,
 } from "../controllers/attendanceController";
 import { authenticate, authorize } from "../middleware/auth";
 import { deviceAuth } from "../middleware/deviceAuth";
@@ -20,6 +21,9 @@ router.get("/dashboard", authenticate, authorize("ADMIN", "FACULTY"), getDashboa
 
 // My attendance - any authenticated user
 router.get("/my", authenticate, getMyAttendance);
+
+// Update attendance status (mark as excused, etc.) - admin/faculty only
+router.put("/:id/status", authenticate, authorize("ADMIN", "FACULTY"), updateAttendanceStatus);
 
 // All attendance records - admin/faculty only
 router.get("/", authenticate, authorize("ADMIN", "FACULTY"), getAttendance);

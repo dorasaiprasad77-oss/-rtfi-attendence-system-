@@ -33,6 +33,7 @@ import {
   BellOff,
   Volume2,
   VolumeX,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/dashboard/reports", label: "Reports", icon: FileBarChart, roles: ["ADMIN", "FACULTY"] },
   { href: "/dashboard/devices", label: "Devices", icon: Cpu, roles: ["ADMIN"] },
   { href: "/dashboard/logs", label: "Access Logs", icon: ScrollText, roles: ["ADMIN", "FACULTY"] },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["ADMIN"] },
 ];
 
 function DashboardShell({ children }: { children: React.ReactNode }) {

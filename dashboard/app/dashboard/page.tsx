@@ -24,6 +24,7 @@ interface DashboardData {
   recentActivity: any[];
   attendanceByDepartment: any[];
   weeklyTrend: any[];
+  department?: string;
 }
 
 export default function OverviewPage() {
@@ -172,7 +173,7 @@ export default function OverviewPage() {
         <div>
           <h1 className="text-xl font-bold text-white">Dashboard</h1>
           <p className="text-sm text-white/35 mt-0.5">
-            {formatDate(new Date())} &middot; Real-time attendance overview
+            {formatDate(new Date())} &middot; {data?.department ? `${data.department} Department · ` : ""}Real-time attendance overview
           </p>
         </div>
         <div className="flex items-center gap-2">

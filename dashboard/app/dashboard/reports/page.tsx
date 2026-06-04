@@ -5,7 +5,9 @@ import { api } from "@/lib/api";
 import { formatDate, statusColor, getInitials } from "@/lib/utils";
 import {
   Download,
+  FileText,
 } from "lucide-react";
+import { generatePDF } from "@/lib/pdf";
 
 interface ReportData {
   period: { type: string; start: string; end: string };
@@ -50,6 +52,30 @@ export default function ReportsPage() {
     loadReport();
   }, [reportType]);
 
+  const handleExportPDF = () => {
+    if (!data?.userStats.length) return;
+    const rate = (u: ReportData["userStats"][0]) =>
+      u.total > 0 ? Math.round(((u.present + u.late) / u.total) * 100) : 0;
+    generatePDF({
+      title: "Attendance Report",
+      subtitle: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report · Generated ${formatDate(new Date())}`,
+      table: {
+        head: [["Name", "Roll No", "Department", "Present", "Late", "Absent", "Excused", "Rate %"]],
+        body: data.userStats.map((u) => [
+          u.user.name,
+          u.user.rollNo || "—",
+          u.user.department || "—",
+          u.present,
+          u.late,
+          u.absent,
+          u.excused,
+          `${rate(u)}%`,
+        ]),
+      },
+      fileName: `report-${reportType}-${formatDate(new Date())}.pdf`,
+    });
+  };
+
   const handleExport = () => {
     if (!data?.userStats.length) return;
     const headers = ["Name", "Roll No", "Department", "Present", "Late", "Absent", "Excused", "Total", "Rate %"];
@@ -82,10 +108,16 @@ export default function ReportsPage() {
           <h1 className="text-xl font-bold text-white">Reports</h1>
           <p className="text-sm text-white/35 mt-0.5">Attendance analytics and summary</p>
         </div>
-        <button onClick={handleExport} className="btn-secondary">
-          <Download className="w-4 h-4" />
-          Export Report
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExport} className="btn-secondary">
+            <Download className="w-4 h-4" />
+            CSV
+          </button>
+          <button onClick={handleExportPDF} className="btn-secondary">
+            <FileText className="w-4 h-4" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Type Selector */}

@@ -14,6 +14,7 @@ import attendanceRoutes from "./routes/attendanceRoutes";
 import deviceRoutes from "./routes/deviceRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import setupRoutes from "./routes/setupRoutes";
+import settingsRoutes from "./routes/settingsRoutes";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -45,6 +46,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/devices", deviceRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/setup", setupRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Error handling
 app.use(notFoundHandler);

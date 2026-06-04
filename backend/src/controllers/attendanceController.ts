@@ -260,23 +260,79 @@ export async function getMyAttendance(req: AuthRequest, res: Response): Promise<
   }
 }
 
-export async function getDashboardStats(_req: AuthRequest, res: Response): Promise<void> {
+export async function updateAttendanceStatus(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["EXCUSED", "PRESENT", "LATE", "ABSENT"];
+    if (!status || !validStatuses.includes(status)) {
+      res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
+      return;
+    }
+
+    const record = await prisma.attendance.findUnique({
+      where: { id },
+      include: { user: { select: { id: true, department: true } } },
+    });
+
+    if (!record) {
+      res.status(404).json({ error: "Attendance record not found" });
+      return;
+    }
+
+    // Faculty can only modify records in their department
+    const isFaculty = req.user?.role === "FACULTY";
+    if (isFaculty && req.user?.department && record.user.department !== req.user.department) {
+      res.status(403).json({ error: "Can only modify attendance for your department" });
+      return;
+    }
+
+    const updated = await prisma.attendance.update({
+      where: { id },
+      data: { status: status as any },
+      include: {
+        user: { select: { id: true, name: true, rollNo: true, department: true, photoUrl: true } },
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Update attendance status error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function getDashboardStats(req: AuthRequest, res: Response): Promise<void> {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // Faculty sees only their department; Admin sees everything
+    const isFaculty = req.user?.role === "FACULTY";
+    const departmentFilter = isFaculty ? req.user?.department : undefined;
+    const studentWhere: any = { isActive: true, role: "STUDENT" };
+    if (departmentFilter) studentWhere.department = departmentFilter;
+
+    const attendanceWhere: any = { date: { gte: today, lt: tomorrow } };
+    const recentWhere: any = { date: { gte: today, lt: tomorrow } };
+    if (departmentFilter) {
+      attendanceWhere.user = { department: departmentFilter };
+      recentWhere.user = { department: departmentFilter };
+    }
+
     const [totalUsers, presentToday, totalDevices, onlineDevices, recentAttendance, departmentStats, weeklyData] =
       await Promise.all([
-        prisma.user.count({ where: { isActive: true, role: "STUDENT" } }),
+        prisma.user.count({ where: studentWhere }),
         prisma.attendance.count({
-          where: { date: { gte: today, lt: tomorrow }, status: { in: ["PRESENT", "LATE"] } },
+          where: { ...attendanceWhere, status: { in: ["PRESENT", "LATE"] } },
         }),
         prisma.device.count(),
         prisma.device.count({ where: { status: "ONLINE" } }),
         prisma.attendance.findMany({
-          where: { date: { gte: today, lt: tomorrow } },
+          where: recentWhere,
           include: {
             user: { select: { name: true, rollNo: true, department: true } },
             device: { select: { deviceName: true } },
@@ -286,20 +342,33 @@ export async function getDashboardStats(_req: AuthRequest, res: Response): Promi
         }),
         prisma.user.groupBy({
           by: ["department"],
-          where: { isActive: true, role: "STUDENT" },
+          where: studentWhere,
           _count: { id: true },
         }),
-        // Last 7 days trend
-        prisma.$queryRaw`
-          SELECT
-            date,
-            COUNT(*) as count,
-            SUM(CASE WHEN status = 'PRESENT' OR status = 'LATE' THEN 1 ELSE 0 END) as present_count
-          FROM attendance
-          WHERE date >= ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
-          GROUP BY date
-          ORDER BY date ASC
-        `,
+        // Last 7 days trend — department-scoped for faculty
+        departmentFilter
+          ? prisma.$queryRaw`
+              SELECT
+                a.date,
+                COUNT(*) as count,
+                SUM(CASE WHEN a.status = 'PRESENT' OR a.status = 'LATE' THEN 1 ELSE 0 END) as present_count
+              FROM attendance a
+              JOIN users u ON a.userId = u.id
+              WHERE a.date >= ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
+                AND u.department = ${departmentFilter}
+              GROUP BY a.date
+              ORDER BY a.date ASC
+            `
+          : prisma.$queryRaw`
+              SELECT
+                date,
+                COUNT(*) as count,
+                SUM(CASE WHEN status = 'PRESENT' OR status = 'LATE' THEN 1 ELSE 0 END) as present_count
+              FROM attendance
+              WHERE date >= ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
+              GROUP BY date
+              ORDER BY date ASC
+            `,
       ]);
 
     const absentToday = totalUsers - presentToday;
@@ -316,6 +385,7 @@ export async function getDashboardStats(_req: AuthRequest, res: Response): Promi
         total: d._count.id,
       })),
       weeklyTrend: weeklyData,
+      ...(departmentFilter ? { department: departmentFilter } : {}),
     });
   } catch (error) {
     console.error("Dashboard stats error:", error);

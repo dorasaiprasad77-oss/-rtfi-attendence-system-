@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string;
   role: "ADMIN" | "FACULTY" | "STUDENT";
   name: string;
+  department?: string;
 }
 
 export interface AuthRequest extends Request {

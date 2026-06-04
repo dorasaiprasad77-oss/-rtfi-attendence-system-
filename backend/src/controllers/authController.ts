@@ -30,6 +30,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       email: user.email,
       role: user.role,
       name: user.name,
+      department: user.department || undefined,
     });
 
     res.json({

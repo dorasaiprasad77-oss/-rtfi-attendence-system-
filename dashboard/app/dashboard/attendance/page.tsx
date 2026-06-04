@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { formatDate, formatTime, statusColor, getInitials } from "@/lib/utils";
 import {
@@ -8,7 +8,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FileText,
+  ShieldCheck,
+  Loader2,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { generatePDF } from "@/lib/pdf";
 
 interface AttendanceRecord {
   id: string;
@@ -35,6 +40,8 @@ interface PaginatedAttendance {
 }
 
 export default function AttendancePage() {
+  const { user } = useAuth();
+  const isFaculty = user?.role === "FACULTY";
   const [data, setData] = useState<PaginatedAttendance | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -43,6 +50,8 @@ export default function AttendancePage() {
   const [endDate, setEndDate] = useState("");
 
 
+  const [excusingId, setExcusingId] = useState<string | null>(null);
+
   const loadAttendance = async () => {
     setLoading(true);
     try {
@@ -50,6 +59,8 @@ export default function AttendancePage() {
       if (statusFilter) params.set("status", statusFilter);
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
+      // Faculty only sees their department
+      if (isFaculty && user?.department) params.set("department", user.department);
       const res = await api.get<PaginatedAttendance>(`/api/attendance?${params}`);
       setData(res);
     } catch {}
@@ -58,7 +69,28 @@ export default function AttendancePage() {
 
   useEffect(() => {
     loadAttendance();
-  }, [page, statusFilter, startDate, endDate]);
+  }, [page, statusFilter, startDate, endDate, isFaculty, user?.department]);
+
+  const handleExportPDF = () => {
+    if (!data?.records.length) return;
+    generatePDF({
+      title: "Attendance Records",
+      subtitle: `${formatDate(new Date())}${statusFilter ? ` · Filter: ${statusFilter}` : ""}${startDate ? ` · From ${startDate}` : ""}${endDate ? ` · To ${endDate}` : ""}`,
+      table: {
+        head: [["Name", "Roll No", "Department", "Date", "Time", "Status", "Device"]],
+        body: data.records.map((r) => [
+          r.user.name,
+          r.user.rollNo || "—",
+          r.user.department || "—",
+          formatDate(r.date),
+          formatTime(r.time),
+          r.status,
+          r.device?.deviceName || "—",
+        ]),
+      },
+      fileName: `attendance-${formatDate(new Date())}.pdf`,
+    });
+  };
 
   const handleExport = () => {
     if (!data?.records.length) return;
@@ -82,10 +114,20 @@ export default function AttendancePage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExcuse = async (recordId: string) => {
+    setExcusingId(recordId);
+    try {
+      await api.put(`/api/attendance/${recordId}/status`, { status: "EXCUSED" });
+      loadAttendance();
+    } catch {}
+    setExcusingId(null);
+  };
+
   // Summary stats
   const presentCount = data?.records.filter((r) => r.status === "PRESENT").length || 0;
   const lateCount = data?.records.filter((r) => r.status === "LATE").length || 0;
   const absentCount = data?.records.filter((r) => r.status === "ABSENT").length || 0;
+  const excusedCount = data?.records.filter((r) => r.status === "EXCUSED").length || 0;
 
   return (
     <div className="space-y-5">
@@ -97,10 +139,16 @@ export default function AttendancePage() {
             {data?.pagination.total || 0} total records
           </p>
         </div>
-        <button onClick={handleExport} className="btn-secondary">
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExport} className="btn-secondary">
+            <Download className="w-4 h-4" />
+            CSV
+          </button>
+          <button onClick={handleExportPDF} className="btn-secondary">
+            <FileText className="w-4 h-4" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -109,6 +157,7 @@ export default function AttendancePage() {
           { label: "Present", count: presentCount, color: "text-emerald-400 bg-emerald-400/10" },
           { label: "Late", count: lateCount, color: "text-amber-400 bg-amber-400/10" },
           { label: "Absent", count: absentCount, color: "text-red-400 bg-red-400/10" },
+          { label: "Excused", count: excusedCount, color: "text-blue-400 bg-blue-400/10" },
         ].map((s) => (
           <div key={s.label} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${s.color}`}>
             {s.label}: {s.count}
@@ -163,6 +212,7 @@ export default function AttendancePage() {
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider hidden sm:table-cell">Time</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider">Status</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider hidden lg:table-cell">Device</th>
+                {isFaculty && <th className="text-right px-4 py-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -205,6 +255,24 @@ export default function AttendancePage() {
                     <td className="px-4 py-3 text-xs text-white/30 hidden lg:table-cell">
                       {rec.device?.deviceName || "—"}
                     </td>
+                    {isFaculty && (
+                      <td className="px-4 py-3 text-right">
+                        {(rec.status === "ABSENT" || rec.status === "LATE") && (
+                          <button
+                            onClick={() => handleExcuse(rec.id)}
+                            disabled={excusingId === rec.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-40"
+                          >
+                            {excusingId === rec.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <ShieldCheck className="w-3 h-3" />
+                            )}
+                            Excuse
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
