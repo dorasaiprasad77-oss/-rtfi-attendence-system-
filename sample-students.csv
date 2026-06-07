@@ -1,0 +1,32 @@
+name,email,password,rollNo,department,role,rfidUid
+Aarav Sharma,aarav.sharma@school.edu,password123,CS24001,Computer Science,STUDENT,AA:11:22:33:01
+Priya Patel,priya.patel@school.edu,password123,CS24002,Computer Science,STUDENT,AA:11:22:33:02
+Rohan Gupta,rohan.gupta@school.edu,password123,CS24003,Computer Science,STUDENT,AA:11:22:33:03
+Sneha Reddy,sneha.reddy@school.edu,password123,CS24004,Computer Science,STUDENT,AA:11:22:33:04
+Vikram Singh,vikram.singh@school.edu,password123,CS24005,Computer Science,STUDENT,AA:11:22:33:05
+Ananya Kumar,ananya.kumar@school.edu,password123,CS24006,Computer Science,STUDENT,AA:11:22:33:06
+Arjun Nair,arjun.nair@school.edu,password123,CS24007,Computer Science,STUDENT,AA:11:22:33:07
+Kavya Iyer,kavya.iyer@school.edu,password123,CS24008,Computer Science,STUDENT,AA:11:22:33:08
+Aditya Verma,aditya.verma@school.edu,password123,CS24009,Computer Science,STUDENT,AA:11:22:33:09
+Deepa Menon,deepa.menon@school.edu,password123,CS24010,Computer Science,STUDENT,AA:11:22:33:0A
+Sahil Joshi,sahil.joshi@school.edu,password123,ME24001,Mechanical Engineering,STUDENT,BB:22:33:44:01
+Riya Desai,riya.desai@school.edu,password123,ME24002,Mechanical Engineering,STUDENT,BB:22:33:44:02
+Karan Mehta,karan.mehta@school.edu,password123,ME24003,Mechanical Engineering,STUDENT,BB:22:33:44:03
+Nisha Agarwal,nisha.agarwal@school.edu,password123,ME24004,Mechanical Engineering,STUDENT,BB:22:33:44:04
+Varun Rao,varun.rao@school.edu,password123,ME24005,Mechanical Engineering,STUDENT,BB:22:33:44:05
+Meera Chopra,meera.chopra@school.edu,password123,ME24006,Mechanical Engineering,STUDENT,BB:22:33:44:06
+Rahul Bhatia,rahul.bhatia@school.edu,password123,ME24007,Mechanical Engineering,STUDENT,BB:22:33:44:07
+Pooja Sinha,pooja.sinha@school.edu,password123,ME24008,Mechanical Engineering,STUDENT,BB:22:33:44:08
+Nikhil Pandey,nikhil.pandey@school.edu,password123,EE24001,Electrical Engineering,STUDENT,CC:33:44:55:01
+Tanvi Shah,tanvi.shah@school.edu,password123,EE24002,Electrical Engineering,STUDENT,CC:33:44:55:02
+Amit Kulkarni,amit.kulkarni@school.edu,password123,EE24003,Electrical Engineering,STUDENT,CC:33:44:55:03
+Shruti Goyal,shruti.goyal@school.edu,password123,EE24004,Electrical Engineering,STUDENT,CC:33:44:55:04
+Manish Tiwari,manish.tiwari@school.edu,password123,EE24005,Electrical Engineering,STUDENT,CC:33:44:55:05
+Kriti Malhotra,kriti.malhotra@school.edu,password123,EE24006,Electrical Engineering,STUDENT,CC:33:44:55:06
+Harsh Vyas,harsh.vyas@school.edu,password123,EE24007,Electrical Engineering,STUDENT,CC:33:44:55:07
+Sakshi Jain,sakshi.jain@school.edu,password123,EE24008,Electrical Engineering,STUDENT,CC:33:44:55:08
+Dr. Suresh Nair,suresh.nair@school.edu,password123,CS-F01,Computer Science,FACULTY,DD:44:55:66:01
+Prof. Lakshmi Rao,lakshmi.rao@school.edu,password123,ME-F01,Mechanical Engineering,FACULTY,DD:44:55:66:02
+Prof. Ramesh Gupta,ramesh.gupta@school.edu,password123,EE-F01,Electrical Engineering,FACULTY,DD:44:55:66:03
+Dr. Geeta Menon,geeta.menon@school.edu,password123,CS-F02,Computer Science,FACULTY,DD:44:55:66:04
+Prof. Sunil Kapoor,sunil.kapoor@school.edu,password123,ME-F02,Mechanical Engineering,FACULTY,DD:44:55:66:05
