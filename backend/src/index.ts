@@ -34,9 +34,27 @@ app.use(express.urlencoded({ extended: true }));
 // Logging
 app.use(morgan(config.nodeEnv === "production" ? "combined" : "dev"));
 
-// Health check
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+// Health check (always responds, even without DB)
+app.get("/api/health", async (_req, res) => {
+  const health: Record<string, any> = {
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    port: config.port,
+    env: config.nodeEnv,
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    frontendUrl: config.frontendUrl,
+  };
+  try {
+    const prisma = (await import("./config/database")).default;
+    await prisma.$queryRaw`SELECT 1`;
+    health.database = "connected";
+  } catch (e: any) {
+    health.database = "disconnected";
+    health.dbError = e?.message || "unknown";
+    health.status = "degraded";
+  }
+  res.json(health);
 });
 
 // Routes
